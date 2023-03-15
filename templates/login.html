@@ -1,3 +1,20 @@
 {% extends 'layout.html' %}
 {% block body %}
+
+<div class="container text-white">
+    <h1 class="text-center">Login Form</h1>
+    <form method="post", action="">
+        <div class="mb-3">
+            <label for="nickname" class="form-label">{{form.username.label}}</label>
+            {{ form.username(class='form-control', id='nickname', size=32) }}
+        </div>
+        <div class="mb-3">
+          <label for="InputPassword1" class="form-label">{{form.password.label}}</label>
+          {{ form.password(class="form-control", id='InputPassword1', size=32) }}
+        </div>
+        <button type="submit" class="btn btn-outline-primary">Submit</button>
+      </form>
+</div>
+
+
 {% endblock %}

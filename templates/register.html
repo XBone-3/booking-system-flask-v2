@@ -1,3 +1,33 @@
 {% extends 'layout.html' %}
 {% block body %}
+
+<div class="container text-white">
+    <h1 class="text-center">Sign-Up Form</h1>
+    <form method="post", action="">
+        <div class="mb-3">
+            <label for="fullname" class="form-label">{{form.name.label}}</label>
+            {{ form.name(class='form-control', id='fullname', size=32) }}
+        </div>
+        <div class="mb-3">
+            <label for="nickname" class="form-label">{{form.username.label}}</label>
+            {{ form.username(class='form-control', id='nickname', size=32) }}
+        </div>
+        <div class="mb-3">
+          <label for="InputPassword1" class="form-label">{{form.password.label}}</label>
+          {{ form.password(class="form-control", id='InputPassword1', size=32) }}
+        </div>
+        <div class="mb-3">
+            <label for="InputEmail1" class="form-label">{{form.email.label}}</label>
+            {{ form.email(class='form-control', id='InputEmail1', size=32) }}
+            <div id="emailHelp" class="form-text text-light">We'll never share your email with anyone else.</div>
+        </div>
+        <div class="mb-3">
+            <label for="InputMobile" class="form-label">{{form.mobile.label}}</label>
+            {{ form.mobile(class='form-control', id='InputMobile', size=32) }}
+            <div id="mobileHelp" class="form-text text-light">We'll never share your mobile number with anyone else.</div>
+        </div>
+        <button type="submit" class="btn btn-outline-primary">Submit</button>
+      </form>
+</div>
+
 {% endblock %}

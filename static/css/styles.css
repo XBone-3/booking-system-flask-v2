@@ -1,5 +1,5 @@
 body{
-    /* background-image: url(images/kid_fielding.jpg);
-    background-size: cover; */
+    background-image: url("/static/images/background-image.jpg");
+    background-size: cover;
     font-family: monospace;
 }

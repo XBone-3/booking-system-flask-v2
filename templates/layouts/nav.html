@@ -1,27 +1,43 @@
-<nav class="shadow navbar navbar-expand-lg bg-body-tertiary">
+<nav class="shadow navbar navbar-expand-lg bg-body-tertiary mb-0">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/home">Crittle</a>
+      {% if session.logged %}
+      <a class="navbar-brand" href="{{ url_for('index') }}">{{ session.name }}</a>
+      {% else %}
+      <a class="navbar-brand" href="{{ url_for('index') }}">Crittle</a>
+      {% endif %}
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="/home">Home</a>
+            <a class="nav-link active" aria-current="page" href="{{ url_for('index') }}">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/about">About</a>
+            <a class="nav-link" href="{{ url_for('about') }}">About</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('book_slot') }}">Book Slot</a>
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               Account
             </a>
+            {% if session.logged %}
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="/register">Register</a></li>
-              <li><a class="dropdown-item" href="/login">Login</a></li>
+              <li><a class="dropdown-item disabled" href="{{ url_for('register') }}">Register</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="/admin">Admin</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin_home') }}">Admin</a></li>
             </ul>
+            {% else %}
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{{ url_for('register') }}">Register</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('login') }}">Login</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin_login') }}">Admin</a></li>
+            </ul>
+            {% endif %}
           </li>
         </ul>
         <form class="d-flex" role="search" action="/search" method="get">

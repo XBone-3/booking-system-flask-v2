@@ -17,8 +17,17 @@
             <a class="nav-link" href="{{ url_for('about') }}">About</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('book_slot') }}">Book Slot</a>
+            <a class="nav-link" href="{{ url_for('book_slot') }}">BookSlot</a>
           </li>
+          {% if session.logged %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('bookings') }}">MyBookings</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link disabled" href="{{ url_for('bookings') }}">MyBookings</a>
+          </li>
+          {% endif %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               Account
@@ -28,7 +37,11 @@
               <li><a class="dropdown-item disabled" href="{{ url_for('register') }}">Register</a></li>
               <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
               <li><hr class="dropdown-divider"></li>
+              {% if session.admin==1 %}
               <li><a class="dropdown-item" href="{{ url_for('admin_home') }}">Admin</a></li>
+              {% else %}
+              <li><a class="dropdown-item disabled" href="{{ url_for('admin_home') }}">Admin</a></li>
+              {% endif %}
             </ul>
             {% else %}
             <ul class="dropdown-menu">

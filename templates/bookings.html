@@ -1,0 +1,47 @@
+{% extends 'layout.html' %}
+{% block body %}
+<!-- <div class="container d-flex flex-wrap justify-content-between">
+    <div class="card dark" style="width: 18rem;">
+        <img src="static/images/Badminton_player.jpeg" class="card-img-top" alt="...">
+        <div class="card-body">
+            <h5 class="card-title">Card title</h5>
+        </div>
+        <ul class="list-group list-group-flush border border-0">
+            <li class="list-group-item dark border border-0">An item</li>
+            <li class="list-group-item dark border border-0">A second item</li>
+            <li class="list-group-item dark border border-0">A third item</li>
+        </ul>
+        <div class="card-body">
+            <a href="#" class="card-link">Card link</a>
+            <a href="#" class="card-link">Another link</a>
+        </div>
+    </div>
+</div> -->
+
+<div class="container">
+    <div class="main-timeline">
+        {% if length > 0 %}
+        {% for booking in bookings %}
+        <div class="timeline">
+            <div class="icon"></div>
+            <div class="date-content">
+                <div class="date-outer">
+                    <span class="date">
+                        <span class="month">{{ booking.day }}<br>{{ booking.month }}</span>
+                        <span class="year">{{booking.year}}</span>
+                    </span>
+                </div>
+            </div>
+            <div class="timeline-content text-white">
+                <h5 class="title">{{ booking.sport }} @ {{ booking.timeslot}}</h5>
+                <p class="description">{{ booking.comment }}</p>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <h1 class="text-center text-white">MAKE YOUR FIRST BOOKING</h1>
+        <a href="{{url_for('book_slot')}}" class="btn btn-success">BOOK</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

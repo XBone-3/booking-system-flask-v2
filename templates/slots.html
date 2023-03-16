@@ -1,4 +1,75 @@
-{% extends 'layout.html' %}
-{% block body %}
-<h1>test</h1>
+{% extends 'layout.html' %} {% block body %}
+<div class="container container-image d-flex flex-row justify-content-center">
+    <div class="row text-white mt-3">
+        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 col mb-3 mb-sm-0">
+            <div class="card border border-0" style="width: 18rem">
+                <img src="static/images/Badminton_Player.jpeg" class="card-img-top p-1"
+                    alt="court 1" />
+                <div class="card-body dark text-center">
+                    <h5 class="card-title text-center">{{court_1.label}} @ {{ court_1.sport }}</h5>
+                    <div class="container">
+                        <form action="?sport={{court_1.label}}&value={{court_1.court1_slots.data}}" method="post">
+                            {% for slot in court_1.court1_slots %} 
+                            {{ slot( class="btn-check" ) }} 
+                            {{ slot.label( class="btn btn-outline-success mb-1")}}
+                            {% endfor %}
+                            <div class="mt-1">
+                                {{court_1.court1_comment()}}
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary">Book</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 col mb-3 mb-sm-0">
+            <div class="card border border-0" style="width: 18rem">
+                <img src="static/images/icc_cricket_world_cup_colorful_6544129.png" class="card-img-top p-1"
+                    alt="court 1" />
+                <div class="card-body dark text-center">
+                    <h5 class="card-title text-center">{{cricket.label}}</h5>
+                    <div class="container-sm">
+                        <form action="?sport={{cricket.label}}&value={{cricket.cricket_slots.data}}" method="post">
+                            {% for slot in cricket.cricket_slots %} 
+                            {{ slot( class="btn-check" ) }} 
+                            {{ slot.label( class="btn btn-outline-success mb-1")}}
+                            {% endfor %}
+                            <div class="mt-1">
+                                {{cricket.cricket_comment()}}
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary">Book</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 col mb-3 mb-sm-0">
+            <div class="card border border-0" style="width: 18rem">
+                <img src="static/images/Badminton_Player.jpeg" class="card-img-top p-1"
+                    alt="court 2" />
+                <div class="card-body dark text-center">
+                    <h5 class="card-title text-center">{{court_2.label}} @ {{ court_2.sport }}</h5>
+                    <div class="container">
+                        <form action="?sport={{court_2.label}}&value={{court_2.court2_slots.data}}" method="post">
+                            {% for slot in court_2.court2_slots %} 
+                            {{ slot( class="btn-check" ) }} 
+                            {{ slot.label( class="btn btn-outline-success mb-1")}}
+                            {% endfor %}
+                            <div class="mt-1">
+                                {{court_2.court2_comment()}}
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary">Book</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

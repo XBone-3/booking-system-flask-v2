@@ -1,4 +1,4 @@
-<nav class="shadow navbar navbar-expand-lg bg-body-tertiary mb-0">
+<nav class="shadow navbar navbar-expand-lg bg-body-tertiary mb-0 fixed-top">
     <div class="container-fluid">
       {% if session.logged %}
       <a class="navbar-brand" href="{{ url_for('index') }}">{{ session.name }}</a>
@@ -21,11 +21,11 @@
           </li>
           {% if session.logged %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('bookings') }}">MyBookings</a>
+            <a class="nav-link" href="{{ url_for('timeline') }}">MyBookings</a>
           </li>
           {% else %}
           <li class="nav-item">
-            <a class="nav-link disabled" href="{{ url_for('bookings') }}">MyBookings</a>
+            <a class="nav-link disabled" href="{{ url_for('timeline') }}">MyBookings</a>
           </li>
           {% endif %}
           <li class="nav-item dropdown">

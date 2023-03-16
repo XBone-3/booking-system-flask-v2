@@ -1,23 +1,6 @@
 {% extends 'layout.html' %}
+{% block title %}{{session.name}} Timeline{% endblock %}
 {% block body %}
-<!-- <div class="container d-flex flex-wrap justify-content-between">
-    <div class="card dark" style="width: 18rem;">
-        <img src="static/images/Badminton_player.jpeg" class="card-img-top" alt="...">
-        <div class="card-body">
-            <h5 class="card-title">Card title</h5>
-        </div>
-        <ul class="list-group list-group-flush border border-0">
-            <li class="list-group-item dark border border-0">An item</li>
-            <li class="list-group-item dark border border-0">A second item</li>
-            <li class="list-group-item dark border border-0">A third item</li>
-        </ul>
-        <div class="card-body">
-            <a href="#" class="card-link">Card link</a>
-            <a href="#" class="card-link">Another link</a>
-        </div>
-    </div>
-</div> -->
-
 <div class="container">
     <div class="main-timeline">
         {% if length > 0 %}
@@ -34,7 +17,7 @@
             </div>
             <div class="timeline-content text-white">
                 <h5 class="title">{{ booking.sport }} @ {{ booking.timeslot}}</h5>
-                <p class="description">{{ booking.comment }}</p>
+                <p class="description">{{ booking.courtname}}<br>{{ booking.comment }}</p>
             </div>
         </div>
         {% endfor %}

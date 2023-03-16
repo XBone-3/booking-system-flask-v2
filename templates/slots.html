@@ -1,4 +1,6 @@
-{% extends 'layout.html' %} {% block body %}
+{% extends 'layout.html' %} 
+{% block title %}Book a slot{% endblock %}
+{% block body %}
 <div class="container container-image d-flex flex-row justify-content-center">
     <div class="row text-white mt-3">
         <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 col mb-3 mb-sm-0">
@@ -10,14 +12,23 @@
                     <div class="container">
                         <form action="?sport={{court_1.label}}&value={{court_1.court1_slots.data}}" method="post">
                             {% for slot in court_1.court1_slots %} 
-                            {{ slot( class="btn-check" ) }} 
-                            {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                {% if slot.data in booked_slots[court_1.label] %}
+                                    {{ slot( class="btn-check" ) }} 
+                                    {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                {% else %}
+                                    {{ slot( class="btn-check" ) }} 
+                                    {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                {% endif %}
                             {% endfor %}
                             <div class="mt-1">
                                 {{court_1.court1_comment()}}
                             </div>
                             <div class="text-center">
-                                <button type="submit" class="btn btn-primary">Book</button>
+                                {% if booked_slots[court_1.label]|length == 4 %}
+                                    <button type="submit" class="btn btn-danger disabled">Book</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-success">Book</button>
+                                {% endif %}
                             </div>
                         </form>
                     </div>
@@ -33,14 +44,23 @@
                     <div class="container-sm">
                         <form action="?sport={{cricket.label}}&value={{cricket.cricket_slots.data}}" method="post">
                             {% for slot in cricket.cricket_slots %} 
-                            {{ slot( class="btn-check" ) }} 
-                            {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                {% if slot.data in booked_slots[cricket.label] %}
+                                    {{ slot( class="btn-check" ) }} 
+                                    {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                {% else %}
+                                    {{ slot( class="btn-check" ) }} 
+                                    {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                {% endif %}
                             {% endfor %}
                             <div class="mt-1">
                                 {{cricket.cricket_comment()}}
                             </div>
                             <div class="text-center">
-                                <button type="submit" class="btn btn-primary">Book</button>
+                                {% if booked_slots[cricket.label]|length == 3 %}
+                                    <button type="submit" class="btn btn-danger disabled">Book</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-success">Book</button>
+                                {% endif %}
                             </div>
                         </form>
                     </div>
@@ -56,14 +76,23 @@
                     <div class="container">
                         <form action="?sport={{court_2.label}}&value={{court_2.court2_slots.data}}" method="post">
                             {% for slot in court_2.court2_slots %} 
-                            {{ slot( class="btn-check" ) }} 
-                            {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                {% if slot.data in booked_slots[court_2.label] %}
+                                    {{ slot( class="btn-check" ) }} 
+                                    {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                {% else %}
+                                    {{ slot( class="btn-check" ) }} 
+                                    {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                {% endif %}
                             {% endfor %}
                             <div class="mt-1">
                                 {{court_2.court2_comment()}}
                             </div>
                             <div class="text-center">
-                                <button type="submit" class="btn btn-primary">Book</button>
+                                {% if booked_slots[court_2.label]|length == 4 %}
+                                    <button type="submit" class="btn btn-danger disabled">Book</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-success">Book</button>
+                                {% endif %}
                             </div>
                         </form>
                     </div>

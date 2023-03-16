@@ -190,7 +190,7 @@ def register():
 
 class SlotBookingForm(Form):
     choices = [("6:00 am", "slot 1"), ("8:00 am", "slot 2"), ("5:30 pm", "slot 3"), ("8:30 pm", "slot 4")]
-    court1_slots = RadioField(label="Court-1", choices=choices)
+    court1_slots = RadioField(label="Court 1", choices=choices)
     
     court1_comment = TextAreaField(label='Comment', render_kw={'cols':24, 'rows':3, 'placeholder':'comment'})
 
@@ -214,6 +214,7 @@ def book_slot():
     court_1 = SlotBookingForm(request.form, label='Court 1', sport='Badminton')
     court_2 = SlotBookingForm(request.form, label="Court 2", sport="Badminton")
     cricket = SlotBookingForm(request.form, label='Cricket', sport="Cricket")
+    booked_slots = disable_slots()
     if request.method == 'POST':
         court1_slot_value = court_1.court1_slots.data
         court1_comment_value = court_1.court1_comment.data
@@ -225,19 +226,23 @@ def book_slot():
         cur = mysql.connection.cursor()
         if 'logged' in session:
             sport = request.args['sport']
-            query_string = "INSERT INTO bookings(username, userid, sport, courtname, year, month, day, timeslot, availability, comment) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            query_string = "INSERT INTO bookings(username, userid, sport, courtname, year, month, day, timeslot, comment) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            update_query = "UPDATE slotsavailable SET availability=0 WHERE courtname=%(court_name)s and timeslot=%(time_slot)s and date=%(date)s"
             if sport == 'Cricket' and cricket_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], "Cricket", sport, date.year, MONTHS[date.month], date.day, cricket_slot_value, 0, cricket_comment_value))
+                cur.execute(query_string, (session['username'], session['uid'], "Cricket", sport, date.year, MONTHS[date.month], date.day, cricket_slot_value, cricket_comment_value))
+                cur.execute(update_query, {'court_name':sport, 'time_slot':cricket_slot_value, 'date':date})
             elif sport == 'Cricket' and cricket_slot_value == None:
                 flash(f"Select a slot for {sport}")
                 return redirect(url_for('book_slot'))
             elif sport == 'Court 1' and court1_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court1_slot_value, 0, court1_comment_value))
+                cur.execute(query_string, (session['username'], session['uid'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court1_slot_value, court1_comment_value))
+                cur.execute(update_query, {'court_name':sport, 'time_slot':court1_slot_value, 'date':date})
             elif sport == 'Court 1' and court1_slot_value == None:
                 flash(f"Select a slot for {sport}")
                 return redirect(url_for('book_slot'))
             elif sport == 'Court 2' and court2_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court2_slot_value, 0, court2_comment_value))
+                cur.execute(query_string, (session['username'], session['uid'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court2_slot_value, court2_comment_value))
+                cur.execute(update_query, {'court_name':sport, 'time_slot':court2_slot_value, 'date':date})
             elif sport == 'Court 2' and court2_slot_value == None:
                 flash(f"Select a slot for {sport}")
                 return redirect(url_for('book_slot'))
@@ -249,11 +254,11 @@ def book_slot():
             cur.close()
             flash("please Login to Book a Slot")
             return redirect(url_for('login'))
-    return render_template('slots.html', court_1=court_1, court_2=court_2, cricket=cricket)
+    return render_template('slots.html', court_1=court_1, court_2=court_2, cricket=cricket, booked_slots=booked_slots)
 
 
-@app.route('/bookings')
-def bookings():
+@app.route('/timeline')
+def timeline():
     if "logged" in session:
         cur = mysql.connection.cursor()
         result = cur.execute(
@@ -261,8 +266,29 @@ def bookings():
         if result > 0:
             bookings = cur.fetchall()
             cur.close()
-            return render_template('bookings.html', bookings=bookings, length=len(bookings))
-    return render_template('bookings.html', bookings=[], length=0)
+            return render_template('timeline.html', bookings=bookings, length=len(bookings))
+    return render_template('timeline.html', bookings=[], length=0)
+
+
+def disable_slots():
+    date = datetime.now().date()
+    booked_slots = {
+        'Cricket': [],
+        'Court 1': [],
+        'Court 2': []
+        }
+    cur = mysql.connection.cursor()
+    result = cur.execute("SELECT courtname, timeslot FROM slotsavailable WHERE availability=0 and date=%(date)s", {'date':date})
+    if result > 0:
+        data = cur.fetchall()
+        for slot in data:
+            booked_slots[slot['courtname']].append(slot['timeslot'])
+        cur.close()
+        return booked_slots
+    else:
+        cur.close()
+        return -1
+    
 
 
 if __name__ == '__main__':

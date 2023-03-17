@@ -20,6 +20,9 @@ MONTHS = {
             12:'December'
         }
 
+COURT_1 = 'Court 1'
+COURT_2 = 'Court 2'
+
 app = Flask(__name__)
 SECRET_KEY = os.urandom(32)
 app.secret_key = SECRET_KEY
@@ -47,11 +50,19 @@ def about():
 
 
 @app.route('/admin_home')
-def admin_home():
-    if 'admin' in request.args:
-        admin_name = request.args['admin']
-        return render_template('admin.html', admin=admin_name)
+def dashboard():
     return render_template("admin.html")
+
+@app.route('/FAQ')
+def faq():
+    return render_template("FAQ.html")
+
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    if 'search' in request.args:
+        search_term = request.args['search']
+        return redirect(url_for('index'))
+    return redirect(url_for('index'))
 
 
 class LoginForm(Form):
@@ -92,7 +103,11 @@ def login():
             else:
                 mysql.connection.commit()
                 cur.close()
+                flash("Password wrong, Please enter correct Password.")
                 return redirect(url_for('login'))
+        else:
+            flash("User Des not exist, Please register.")
+            return redirect(url_for("register"))
     return render_template('login.html', form=form)
 
 
@@ -124,7 +139,7 @@ def admin_login():
                 mysql.connection.commit()
                 cur.close()
                 flash("Successfully Logged")
-                return redirect(url_for("admin_home", admin=name))
+                return redirect(url_for("dashboard"))
             else:
                 cur.close()
                 return redirect(url_for('admin_login'))
@@ -183,7 +198,7 @@ def register():
             return redirect(url_for('index'))
         else:
             cur.close()
-            flash(f"{username} already exist please login")
+            flash(f"{username} already exist please login or try creating account with unique Username")
             return redirect(url_for('login'))
     return render_template('register.html', form=form)
 
@@ -194,7 +209,7 @@ class SlotBookingForm(Form):
     
     court1_comment = TextAreaField(label='Comment', render_kw={'cols':24, 'rows':3, 'placeholder':'comment'})
 
-    court2_slots = RadioField(label="Court 2", choices=choices)
+    court2_slots = RadioField(label=COURT_2, choices=choices)
     
     court2_comment = TextAreaField(label="Comment", render_kw={'cols':25, 'rows':3, 'placeholder':'comment'})
     
@@ -208,10 +223,14 @@ class SlotBookingForm(Form):
         self.label = kwargs['label']
         self.sport = kwargs['sport']
 
+def helper(sport):
+    flash(f"Select a slot for {sport}")
+    return redirect(url_for('book_slot'))
+
 
 @app.route('/bookslot', methods=['GET', 'POST'])
 def book_slot():
-    court_1 = SlotBookingForm(request.form, label='Court 1', sport='Badminton')
+    court_1 = SlotBookingForm(request.form, label=COURT_1, sport='Badminton')
     court_2 = SlotBookingForm(request.form, label="Court 2", sport="Badminton")
     cricket = SlotBookingForm(request.form, label='Cricket', sport="Cricket")
     booked_slots = disable_slots()
@@ -226,26 +245,23 @@ def book_slot():
         cur = mysql.connection.cursor()
         if 'logged' in session:
             sport = request.args['sport']
-            query_string = "INSERT INTO bookings(username, userid, sport, courtname, year, month, day, timeslot, comment) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            query_string = "INSERT INTO bookings(username, sport, courtname, year, month, day, timeslot, comment) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)"
             update_query = "UPDATE slotsavailable SET availability=0 WHERE courtname=%(court_name)s and timeslot=%(time_slot)s and date=%(date)s"
             if sport == 'Cricket' and cricket_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], "Cricket", sport, date.year, MONTHS[date.month], date.day, cricket_slot_value, cricket_comment_value))
+                cur.execute(query_string, (session['username'], "Cricket", sport, date.year, MONTHS[date.month], date.day, cricket_slot_value, cricket_comment_value))
                 cur.execute(update_query, {'court_name':sport, 'time_slot':cricket_slot_value, 'date':date})
             elif sport == 'Cricket' and cricket_slot_value == None:
-                flash(f"Select a slot for {sport}")
-                return redirect(url_for('book_slot'))
-            elif sport == 'Court 1' and court1_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court1_slot_value, court1_comment_value))
+                helper(sport)
+            elif sport == COURT_1 and court1_slot_value != None:
+                cur.execute(query_string, (session['username'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court1_slot_value, court1_comment_value))
                 cur.execute(update_query, {'court_name':sport, 'time_slot':court1_slot_value, 'date':date})
-            elif sport == 'Court 1' and court1_slot_value == None:
-                flash(f"Select a slot for {sport}")
-                return redirect(url_for('book_slot'))
-            elif sport == 'Court 2' and court2_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court2_slot_value, court2_comment_value))
+            elif sport == COURT_1 and court1_slot_value == None:
+                helper(sport)
+            elif sport == COURT_2 and court2_slot_value != None:
+                cur.execute(query_string, (session['username'], "Badminton", sport, date.year, MONTHS[date.month], date.day, court2_slot_value, court2_comment_value))
                 cur.execute(update_query, {'court_name':sport, 'time_slot':court2_slot_value, 'date':date})
-            elif sport == 'Court 2' and court2_slot_value == None:
-                flash(f"Select a slot for {sport}")
-                return redirect(url_for('book_slot'))
+            elif sport == COURT_2 and court2_slot_value == None:
+                helper(sport)
             mysql.connection.commit()
             cur.close()
             flash(f"Slot booked successfully for {sport}")
@@ -262,7 +278,7 @@ def timeline():
     if "logged" in session:
         cur = mysql.connection.cursor()
         result = cur.execute(
-            "SELECT * FROM bookings WHERE userid=%(user_id)s", {'user_id': session['uid']})
+            "SELECT * FROM bookings WHERE username=%(user_name)s", {'user_name': session['username']})
         if result > 0:
             bookings = cur.fetchall()
             cur.close()
@@ -274,8 +290,8 @@ def disable_slots():
     date = datetime.now().date()
     booked_slots = {
         'Cricket': [],
-        'Court 1': [],
-        'Court 2': []
+        COURT_1: [],
+        COURT_2: []
         }
     cur = mysql.connection.cursor()
     result = cur.execute("SELECT courtname, timeslot FROM slotsavailable WHERE availability=0 and date=%(date)s", {'date':date})

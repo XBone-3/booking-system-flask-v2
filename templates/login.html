@@ -5,6 +5,7 @@
 <div class="container text-white">
     <h1 class="text-center">Login Form</h1>
     <form method="post" action="">
+      {% if not forgot_password %}
         <div class="mb-3">
             <label for="nickname" class="form-label">{{form.username.label}}</label>
             {{ form.username(class='form-control', id='nickname', size=32) }}
@@ -13,8 +14,22 @@
           <label for="InputPassword1" class="form-label">{{form.password.label}}</label>
           {{ form.password(class="form-control", id='InputPassword1', size=32) }}
         </div>
-        <button type="submit" class="btn btn-outline-success">Submit</button>
-      </form>
+        <a href="{{ url_for('reset_password') }}" class="link-secondary">forgot password?</a>
+      {% else %}
+        <div class="mb-3">
+          <label for="nickname" class="form-label">{{form.username.label}}</label>
+          {{ form.username(class='form-control', id='nickname', size=32) }}
+        </div>
+        <div class="mb-3">
+          <label for="confirmmobile" class="form-label">{{form.mobile.label}}</label>
+          {{ form.mobile(class="form-control", id='confirmmobile', size=32) }}
+        </div>
+        <div id="mobileHelp" class="form-text text-light">Please verify your registered mobile to reset password.</div>
+      {% endif %}
+      <div class="container">
+        <button type="submit" class="btn btn-outline-success mt-3">Submit</button>
+      </div>
+    </form>
 </div>
 
 

@@ -14,8 +14,12 @@
             {{ form.username(class='form-control', id='nickname', size=32) }}
         </div>
         <div class="mb-3">
-          <label for="InputPassword1" class="form-label">{{form.password.label}}</label>
-          {{ form.password(class="form-control", id='InputPassword1', size=32) }}
+          <label for="InputPassword" class="form-label">{{form.password.label}}</label>
+          {{ form.password(class="form-control", id='InputPassword', size=32) }}
+        </div>
+        <div class="mb-3">
+            <label for="ConfirmPassword" class="form-label">{{form.confirm_password.label}}</label>
+            {{ form.confirm_password(class="form-control", id='ConfirmPassword', size=32) }}
         </div>
         <div class="mb-3">
             <label for="InputEmail1" class="form-label">{{form.email.label}}</label>

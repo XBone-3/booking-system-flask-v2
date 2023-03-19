@@ -1,35 +1,15 @@
 from flask import Flask, flash, render_template, request, session, redirect, url_for
 from flask_mysqldb import MySQL
-from wtforms import StringField, EmailField, PasswordField, validators, Form, RadioField, TextAreaField
+from forms import  LoginForm, RegisterForm, SlotBookingForm, PasswordResetForm
 from passlib.hash import sha256_crypt
-import os, re
 from datetime import datetime
+from statics import COURT_1, COURT_2, CRICKET, MONTHS, SLOTS, C_SLOTS, PASSWORD, SECRET_KEY
 
-MONTHS = {	
-            1:'January',
-            2:'February',
-            3:'March',
-            4:'April',
-            5:'May',
-            6:'June',
-            7:'July',
-            8:'August',
-            9:'September',
-            10:'October',
-            11:'November',
-            12:'December'
-        }
-
-COURT_1 = 'Court 1'
-COURT_2 = 'Court 2'
-CRICKET = 'Cricket'
-SLOTS = ['6:00 am', '8:00 am', '5:30 pm', '8:30 pm']
-C_SLOTS = ['forenoon', 'afternoon', 'night']
+FORGOT_PASSWORD_STATUS = False
 
 app = Flask(__name__)
-SECRET_KEY = os.urandom(32)
 app.secret_key = SECRET_KEY
-PASSWORD = 'fool'.encode()
+
 
 app.config['MYSQL_HOST'] = "localhost"
 app.config['MYSQL_USER'] = "call_me_x"
@@ -68,13 +48,6 @@ def search():
     return redirect(url_for('index'))
 
 
-class LoginForm(Form):
-    username = StringField('Username', [validators.length(
-        min=3, max=11), validators.DataRequired()], render_kw={'placeholder': 'User Name'})
-    password = PasswordField('Password', [validators.length(
-        min=6), validators.DataRequired()], render_kw={'placeholder': 'Enter your password'})
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm(request.form)
@@ -91,12 +64,14 @@ def login():
             uid = data['id']
             admin = data['admin']
             username = data['username']
+            mobile = data['mobile']
             if sha256_crypt.verify(user_password, password):
                 session['logged'] = True
                 session['uid'] = uid
                 session['name'] = name
                 session['admin'] = admin
                 session['username'] = username
+                session['mobile'] = mobile
                 online = 1
                 cur.execute("UPDATE users SET online=%(online_status)s WHERE id=%(user_id)s", {
                             'online_status': online, 'user_id': uid})
@@ -109,9 +84,9 @@ def login():
                 flash("Password wrong, Please enter correct Password.")
                 return redirect(url_for('login'))
         else:
-            flash("User Des not exist, Please register.")
+            flash("User Does not exist, Please register.")
             return redirect(url_for("register"))
-    return render_template('login.html', form=form)
+    return render_template('login.html', form=form, forgot_password=FORGOT_PASSWORD_STATUS)
 
 
 @app.route('/admin_login', methods=['GET', 'POST'])
@@ -166,18 +141,42 @@ def logout():
         session.clear()
     return redirect(url_for('index'))
 
-
-class RegisterForm(Form):
-    name = StringField('Name', [validators.length(min=3, max=15), validators.DataRequired(
-    )], render_kw={'autofocus': True, 'placeholder': 'Full Name'})
-    username = StringField('Username', [validators.length(
-        min=3, max=11), validators.DataRequired()], render_kw={'placeholder': 'Name you wish to see'})
-    password = PasswordField('Password', [validators.length(min=6), validators.DataRequired(
-    )], render_kw={'placeholder': 'Password minimum 8 characters'})
-    email = EmailField('Email', [validators.length(min=6), validators.DataRequired(
-    ), validators.Email()], render_kw={'placeholder': 'Email'})
-    mobile = StringField('Mobile', [validators.length(min=10), validators.DataRequired(
-    )], render_kw={'placeholder': 'mobile "ex : 1234567890"'})
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    FORGOT_PASSWORD_STATUS = True
+    form = LoginForm(request.form)
+    reset_form = PasswordResetForm(request.form)
+    if request.method == 'POST':
+        username = form.username.data
+        mobile = form.mobile.data
+        cur = mysql.connection.cursor()
+        if 'reset' in request.args:
+            if reset_form.confirm_new_password.data == reset_form.new_password.data:
+                new_password = sha256_crypt.encrypt(str(reset_form.new_password.data))
+                cur.execute("UPDATE users SET user_password=%(new_pass)s WHERE username=%(user_name)s", {'user_name':username, 'new_pass':new_password})
+                mysql.connection.commit()
+                cur.close()
+                flash("password updated successfully")
+                return redirect(url_for('login'))
+            else:
+                flash("password mismatch")
+                return render_template('reset.html', form=reset_form)
+        result = cur.execute("SELECT * FROM users WHERE username=%(user_name)s", {'user_name': username})
+        if result > 0:
+            user = cur.fetchone()
+            if user['mobile'] == mobile:
+                cur.close()
+                FORGOT_PASSWORD_STATUS = False
+                return render_template('reset.html', form=reset_form)
+            else:
+                cur.close()
+                flash("please enter correct mobile")
+                return render_template('login.html', form=form, forgot_password=FORGOT_PASSWORD_STATUS)
+        else:
+            cur.close()
+            flash("Please enter Valid details")
+            return render_template('login.html', form=form, forgot_password=FORGOT_PASSWORD_STATUS)
+    return render_template('login.html', form=form, forgot_password=FORGOT_PASSWORD_STATUS)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -206,29 +205,6 @@ def register():
     return render_template('register.html', form=form)
 
 
-class SlotBookingForm(Form):
-    choices = [("6:00 am", "slot 1"), ("8:00 am", "slot 2"), ("5:30 pm", "slot 3"), ("8:30 pm", "slot 4")]
-    day_choices = [('today', "Today"), ('tomorrow', "Tomorrow")]
-    days = RadioField(label='Day', choices=day_choices)
-
-    court1_slots = RadioField(label="Court 1", choices=choices)
-    
-    court1_comment = TextAreaField(label='Comment', render_kw={'cols':24, 'rows':3, 'placeholder':'comment'})
-
-    court2_slots = RadioField(label=COURT_2, choices=choices)
-    
-    court2_comment = TextAreaField(label="Comment", render_kw={'cols':25, 'rows':3, 'placeholder':'comment'})
-    
-    cricket_slots = RadioField(label="Cricket", choices=[(
-        "forenoon", "forenoon"), ("afternoon", "afternoon"), ("night", "night")])
-    
-    cricket_comment = TextAreaField(label="Comment", render_kw={'cols':25, 'rows':3, 'placeholder':'comment'})
-
-    def __init__(self, formdata=None, obj=None, prefix="", data=None, meta=None, **kwargs):
-        super().__init__(formdata, obj, prefix, data, meta, **kwargs)
-        self.label = kwargs['label']
-        self.sport = kwargs['sport']
-
 def helper(sport):
     flash(f"Select a slot for {sport}")
     return redirect(url_for('book_slot'))
@@ -248,6 +224,8 @@ def book_slot():
         court2_comment_value = court_2.court2_comment.data
         cricket_slot_value = cricket.cricket_slots.data
         cricket_comment_value = cricket.cricket_comment.data
+        day_value = radio_day.days.data
+        print(day_value)
         # TODO: implement next day slots
         date = datetime.now().date()
         cur = mysql.connection.cursor()

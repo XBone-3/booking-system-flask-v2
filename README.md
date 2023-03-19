@@ -15,5 +15,6 @@ flask applicatio to book a slot from available slots from provided sports
   - if no slots available book option disabled
 - timeline of bookings for users
 - password encryption
+- password reset
 
-## working on admin dashboard, password reset feature
+## working on admin dashboard

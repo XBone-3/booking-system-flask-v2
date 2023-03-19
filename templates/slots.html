@@ -3,7 +3,7 @@
 {% block body %}
 <div class="container d-flex flex-row justify-content-center">
     <div class="p-2">
-        <form id="day" action="" method="post">
+        <form action="" method="post">
             {% for day in day_choice.days %} 
             {{ day( class="btn-check") }} 
             {{ day.label( class="btn btn-outline-success mb-1")}}
@@ -69,7 +69,7 @@
                                 {% if booked_slots[cricket.label]|length == 3 %}
                                     <button type="submit" class="btn btn-danger disabled">Book</button>
                                 {% else %}
-                                    <button type="submit" class="btn btn-success">Book {{ booked_slots[cricket.label]|length }}</button>
+                                    <button type="submit" class="btn btn-success">Book</button>
                                 {% endif %}
                             </div>
                         </form>

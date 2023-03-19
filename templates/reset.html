@@ -1,0 +1,20 @@
+{% extends 'layout.html' %}
+{% block title %}Reset Password{% endblock %}
+{% block body %}
+<div class="container text-white">
+    <h1 class="text-center">Reset Password</h1>
+    <form action="?reset=true" method="post">
+        <div class="mb-3">
+            <label for="newpassword" class="form-label">{{form.new_password.label}}</label>
+            {{ form.new_password(class='form-control', id='newpassword', size=32) }}
+          </div>
+          <div class="mb-3">
+            <label for="confirmnewpassword" class="form-label">{{form.confirm_new_password.label}}</label>
+            {{ form.confirm_new_password(class="form-control", id='confirmnewpassword', size=32) }}
+          </div>
+        <div class="container">
+          <button type="submit" class="btn btn-outline-success mt-3">Submit</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

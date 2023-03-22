@@ -16,5 +16,8 @@ flask applicatio to book a slot from available slots from provided sports
 - timeline of bookings for users
 - password encryption
 - password reset
+- admin dashboard features
+  - admin can Block slots before updating them to the server
+  - can see number of online users
 
 ## working on admin dashboard

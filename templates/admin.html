@@ -1,5 +1,85 @@
 {% extends 'layout.html' %}
 {% block title %}Crittle Admin{% endblock %}
 {% block body %}
-
+<form action="?slot" method="post">
+  <div class="container text-white">
+    <div class="container overflow-hidden text-center">
+      <div class="row gy-5 mt-3">
+        <div class="col-6">
+          <div class="p-3 rounded bg-info bg-gradient bg-opacity-10">
+            <h2 class="text-center">Online users</h2>
+            <p class="text-center p-3">{{ ONLINE_USERS }}</p>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-3 rounded bg-dark bg-gradient bg-opacity-10">
+            <h2 class="text-center">Add Slots</h2>
+            <button type="submit" class="btn btn-outline-success">Update Slots</button>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-3 rounded bg-dark bg-gradient bg-opacity-25">
+            <h2 class="text-center">Block Slots</h2>
+            <div class="container">
+              <h3 class="text-left">{{ court_1.label }} @ {{ court_1.sport }}</h3>
+              <hr>
+              <div class="d-flex flex-row justify-content-center">
+                {% for slot in court_1.court1_slots %}
+                <div class="flex-item">
+                  {% if slot.data in blocked_slots[court_1.label] %}
+                    {{ slot( class="btn-check" ) }}
+                    {{ slot.label( class="btn btn-outline-danger m-3" ) }}
+                  {% else %}
+                    {{ slot( class="btn-check" ) }}
+                    {{ slot.label( class="btn btn-outline-success m-3" ) }}
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="container">
+              <h3 class="text-left">{{ cricket.sport }}</h3>
+              <hr>
+              <div class="d-flex flex-row justify-content-center">
+                {% for slot in cricket.cricket_slots %}
+                <div class="flex-item">
+                  {% if slot.data in blocked_slots[cricket.label] %}
+                    {{ slot( class="btn-check" ) }}
+                    {{ slot.label( class="btn btn-outline-danger m-3" ) }}
+                  {% else %}
+                    {{ slot( class="btn-check" ) }}
+                    {{ slot.label( class="btn btn-outline-success m-3" ) }}
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="container">
+              <h3 class="text-left">{{ court_2.label }} @ {{ court_2.sport}}</h3>
+              <hr>
+              <div class="d-flex flex-row justify-content-center">
+                {% for slot in court_2.court2_slots %}
+                <div class="flex-item">
+                  {% if slot.data in blocked_slots[court_2.label] %}
+                    {{ slot( class="btn-check" ) }}
+                    {{ slot.label( class="btn btn-outline-danger m-3" ) }}
+                  {% else %}
+                    {{ slot( class="btn-check" ) }}
+                    {{ slot.label( class="btn btn-outline-success m-3" ) }}
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-3 rounded bg-success bg-gradient bg-opacity-25">
+            <h2 class="text-center">Total Profits</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
 {% endblock %}

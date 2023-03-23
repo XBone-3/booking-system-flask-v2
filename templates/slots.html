@@ -34,7 +34,7 @@
                                 {{court_1.court1_comment()}}
                             </div>
                             <div class="text-center">
-                                {% if booked_slots[court_1.label]|length == 4 %}
+                                {% if booked_slots[court_1.label]|length >= 4 %}
                                     <button type="submit" class="btn btn-danger disabled">Book</button>
                                 {% else %}
                                     <button type="submit" class="btn btn-success">Book</button>
@@ -98,7 +98,7 @@
                                 {{court_2.court2_comment()}}
                             </div>
                             <div class="text-center">
-                                {% if booked_slots[court_2.label]|length == 4 %}
+                                {% if booked_slots[court_2.label]|length >= 4 %}
                                     <button type="submit" class="btn btn-danger disabled">Book</button>
                                 {% else %}
                                     <button type="submit" class="btn btn-success">Book</button>

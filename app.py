@@ -90,7 +90,7 @@ def search():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         username = form.username.data
         user_password = form.password.data
         cur = mysql.connection.cursor()
@@ -118,11 +118,11 @@ def login():
                 cur.close()
                 return redirect(url_for('index'))
             else:
-                mysql.connection.commit()
                 cur.close()
                 flash("Password wrong, Please enter correct Password.")
                 return redirect(url_for('login'))
         else:
+            cur.close()
             flash("User Does not exist, Please register.")
             return redirect(url_for("register"))
     return render_template(HTMLS['login'], form=form, forgot_password=FORGOT_PASSWORD_STATUS)
@@ -205,6 +205,7 @@ def reset_password():
                 return redirect(url_for('login'))
             else:
                 flash("password mismatch")
+                cur.close()
                 return render_template(HTMLS['reset'], form=reset_form)
         result = cur.execute(
             "SELECT * FROM users WHERE username=%(user_name)s", {'user_name': username})
@@ -228,7 +229,7 @@ def reset_password():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         name = form.name.data
         username = form.username.data
         password = sha256_crypt.encrypt(str(form.password.data))
@@ -334,6 +335,15 @@ def disable_slots():
         COURT_1: [],
         COURT_2: []
     }
+    cur = mysql.connection.cursor()
+    available_slots = cur.execute(
+        "SELECT * FROM slotsavailable WHERE availability=1 and date=%(date)s", {'date': date})
+    if available_slots == 0:
+        booked_slots[COURT_1].extend(SLOTS)
+        booked_slots[COURT_2].extend(SLOTS)
+        booked_slots[CRICKET].extend(C_SLOTS)
+        cur.close()
+        return booked_slots
     if hour >= 20:
         booked_slots[COURT_1].extend(SLOTS)
         booked_slots[COURT_2].extend(SLOTS)
@@ -356,15 +366,6 @@ def disable_slots():
     elif hour >= 6:
         booked_slots[COURT_1].append(SLOTS[0])
         booked_slots[COURT_2].append(SLOTS[0])
-    cur = mysql.connection.cursor()
-    available_slots = cur.execute(
-        "SELECT * FROM slotsavailable WHERE availability=1 and date=%(date)s", {'date': date})
-    if available_slots == 0:
-        booked_slots[COURT_1].extend(SLOTS)
-        booked_slots[COURT_2].extend(SLOTS)
-        booked_slots[CRICKET].extend(C_SLOTS)
-        cur.close()
-        return booked_slots
     result = cur.execute(
         "SELECT courtname, timeslot FROM slotsavailable WHERE availability=0 and date=%(date)s", {'date': date})
     if result > 0:

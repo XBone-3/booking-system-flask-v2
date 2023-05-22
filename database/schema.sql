@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `crittle`.`slotsavailable` (
   `courtname` VARCHAR(45) NOT NULL,
   `timeslot` VARCHAR(45) NOT NULL,
   `availability` TINYINT NOT NULL DEFAULT '1',
-  `date` DATE NULL DEFAULT curdate(),
+  `date` DATE NULL DEFAULT (current_date),
   PRIMARY KEY (`id`),
   INDEX `id_idx` (`id` ASC) VISIBLE)
 ENGINE = InnoDB

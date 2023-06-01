@@ -20,7 +20,7 @@
                 <div class="card-body dark text-center">
                     <h5 class="card-title text-center">{{court_1.label}} @ {{ court_1.sport }}</h5>
                     <div class="container">
-                        <form action="?sport={{court_1.label}}&value={{court_1.court1_slots.data}}" method="post">
+                        <form action="?sport=Badminton&court={{court_1.label}}&value={{court_1.court1_slots.data}}" method="post">
                             {% for slot in court_1.court1_slots %} 
                                 {% if slot.data in booked_slots[court_1.label] %}
                                     {{ slot( class="btn-check" ) }} 
@@ -52,7 +52,7 @@
                 <div class="card-body dark text-center">
                     <h5 class="card-title text-center">{{cricket.label}}</h5>
                     <div class="container-sm">
-                        <form action="?sport={{cricket.label}}&value={{cricket.cricket_slots.data}}" method="post">
+                        <form action="?sport=Cricket&court={{cricket.label}}&value={{cricket.cricket_slots.data}}" method="post">
                             {% for slot in cricket.cricket_slots %} 
                                 {% if slot.data in booked_slots[cricket.label] %}
                                     {{ slot( class="btn-check" ) }} 
@@ -84,7 +84,7 @@
                 <div class="card-body dark text-center">
                     <h5 class="card-title text-center">{{court_2.label}} @ {{ court_2.sport }}</h5>
                     <div class="container">
-                        <form action="?sport={{court_2.label}}&value={{court_2.court2_slots.data}}" method="post">
+                        <form action="?sport=Badminton&court={{court_2.label}}&value={{court_2.court2_slots.data}}" method="post">
                             {% for slot in court_2.court2_slots %} 
                                 {% if slot.data in booked_slots[court_2.label] %}
                                     {{ slot( class="btn-check" ) }} 

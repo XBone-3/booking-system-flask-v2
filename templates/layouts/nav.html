@@ -40,19 +40,23 @@
             <ul class="dropdown-menu">
               <li><a class="dropdown-item disabled" href="{{ url_for('register') }}">Register</a></li>
               <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
-              <li><hr class="dropdown-divider"></li>
               {% if session.admin==1 %}
+              <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">Admin</a></li>
+              {#
               {% else %}
-              <li><a class="dropdown-item disabled" href="{{ url_for('dashboard') }}">Admin</a></li>
+              <li><a class="dropdown-item disabled" href="{{ url_for('settings') }}">Profile</a></li>
+              #}
               {% endif %}
             </ul>
             {% else %}
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{{ url_for('register') }}">Register</a></li>
               <li><a class="dropdown-item" href="{{ url_for('login') }}">Login</a></li>
+              {#
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="{{ url_for('admin_login') }}">Admin</a></li>
+              #}
             </ul>
             {% endif %}
           </li>

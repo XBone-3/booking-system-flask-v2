@@ -1,4 +1,3 @@
-from cProfile import label
 from flask_wtf import FlaskForm
 from wtforms import StringField, EmailField, PasswordField, validators, RadioField, TextAreaField, SelectMultipleField, MultipleFileField, widgets
 from statics import COURT_2, COURT_1, CRICKET, BADMINTON_CHOICES, DAY_CHOICES, CRICKET_CHOICES

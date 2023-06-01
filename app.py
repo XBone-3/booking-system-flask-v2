@@ -1,35 +1,48 @@
 from flask import Flask, flash, render_template, request, session, redirect, url_for
-from flask_mysqldb import MySQL
 from forms import LoginForm, RegisterForm, SlotBookingForm, PasswordResetForm, AdminSlotBookingForm
 from passlib.hash import sha256_crypt
 from datetime import datetime
-from statics import COURT_1, COURT_2, CRICKET, MONTHS, SLOTS, C_SLOTS, PASSWORD, SECRET_KEY, HTMLS, QUERY, BADMINTON
+from statics import COURT_1, COURT_2, CRICKET, PASSWORD, B_SLOTS, C_SLOTS, SECRET_KEY, HTMLS, BADMINTON, SUCCESSFULL_LOGIN_MESSAGE
+from models import db, Users, Bookings, Slots, Conf
 
 FORGOT_PASSWORD_STATUS = False
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-app.config['MYSQL_HOST'] = "localhost"
-app.config['MYSQL_USER'] = "call_me_x"
-app.config['MYSQL_PASSWORD'] = PASSWORD.decode()
-app.config['MYSQL_PORT'] = 3306
-app.config['MYSQL_DB'] = 'crittle'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+Conf(app, PASSWORD.decode())
 
-mysql = MySQL(app)
-
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+    db.session.commit()
 
 @app.route('/')
 @app.route('/home')
 def index():
     return render_template(HTMLS['index'])
 
-
 @app.route('/about')
 def about():
     return render_template(HTMLS['about'])
 
+def prepare_slots(court1_blocked_slots, court2_blocked_slots, cricket_blocked_slots):
+    slots = []
+    for timeslot in C_SLOTS:
+        if timeslot in cricket_blocked_slots:
+            slots.append(Slots(sport=CRICKET, courtname=CRICKET, timeslot=timeslot, availability=0))
+        else:
+            slots.append(Slots(sport=CRICKET, courtname=CRICKET, timeslot=timeslot))
+    for timeslot in B_SLOTS:
+        if timeslot in court1_blocked_slots:
+            slots.append(Slots(sport=BADMINTON, courtname=COURT_1, timeslot=timeslot, availability=0))
+        else:
+            slots.append(Slots(sport=BADMINTON, courtname=COURT_1, timeslot=timeslot))
+        if timeslot in court2_blocked_slots:
+            slots.append(Slots(sport=BADMINTON, courtname=COURT_2, timeslot=timeslot, availability=0))
+        else:
+            slots.append(Slots(sport=BADMINTON, courtname=COURT_2, timeslot=timeslot))
+    return slots
 
 @app.route('/admin_home', methods=['GET', 'POST'])
 def dashboard():
@@ -37,40 +50,23 @@ def dashboard():
     court_2 = AdminSlotBookingForm(label=COURT_2, sport=BADMINTON)
     cricket = AdminSlotBookingForm(label=CRICKET, sport=CRICKET)
     blocked_slots = disable_slots()
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(ID) AS online_users FROM users WHERE ONLINE=1")
-    data = cur.fetchone()
-    online_users = data['online_users']
+    online_users = Users.query.filter_by(online=1).count()
     if request.method == 'POST':
         court1_blocked_slots = court_1.court1_slots.data
         court2_blocked_slots = court_2.court2_slots.data
         cricket_blocked_slots = cricket.cricket_slots.data
         if 'slot' in request.args:
             date = datetime.now().date()
-            slots_today = cur.execute("SELECT * FROM slotsavailable WHERE date=%(date)s", {'date':date})
+            slots_today = Slots.query.filter_by(date=date).count()
             if slots_today > 0:
-                cur.close()
                 flash("slots already available for today")
                 return redirect(url_for('dashboard'))
             else:
-                cur.execute(QUERY)
-                mysql.connection.commit()
-                if court1_blocked_slots:
-                    for slot in court1_blocked_slots:
-                        cur.execute('UPDATE slotsavailable SET availability=0 WHERE courtname="Court 1" and timeslot=%(slot)s and date=%(date)s', {'slot':slot, 'date':date})
-                    mysql.connection.commit()
-                if court2_blocked_slots:
-                    for slot in court2_blocked_slots:
-                        cur.execute('UPDATE slotsavailable SET availability=0 WHERE courtname="Court 2" and timeslot=%(slot)s and date=%(date)s', {'slot':slot, 'date':date})
-                    mysql.connection.commit()
-                if cricket_blocked_slots:
-                    for slot in cricket_blocked_slots:
-                        cur.execute('UPDATE slotsavailable SET availability=0 WHERE courtname="Cricket" and timeslot=%(slot)s and date=%(date)s', {'slot':slot, 'date':date})
-                    mysql.connection.commit()
-                cur.close()
+                slots = prepare_slots(court1_blocked_slots, court2_blocked_slots, cricket_blocked_slots)
+                db.session.add_all(slots)
+                db.session.commit()
                 flash("slots updated successfully")
                 return redirect(url_for('dashboard'))      
-    cur.close()
     return render_template(HTMLS['admin'], ONLINE_USERS=online_users, court_1=court_1, court_2=court_2, cricket=cricket, blocked_slots=blocked_slots)
 
 
@@ -93,93 +89,46 @@ def login():
     if request.method == 'POST':
         username = form.username.data
         user_password = form.password.data
-        cur = mysql.connection.cursor()
-        result = cur.execute(
-            "SELECT * FROM users WHERE username=%(user_name)s", {'user_name': username})
-        if result > 0:
-            data = cur.fetchone()
-            name = data['name']
-            password = data['user_password']
-            uid = data['id']
-            admin = data['admin']
-            username = data['username']
-            mobile = data['mobile']
-            if sha256_crypt.verify(user_password, password):
+        user = Users.query.filter_by(username=username).first()
+        if user:
+            name = user.name
+            uid = user.user_id
+            admin = user.admin
+            username = user.username
+            mobile = user.mobile
+            email = user.email
+            if user.verify_password(str(user_password)):
                 session['logged'] = True
                 session['uid'] = uid
                 session['name'] = name
                 session['admin'] = admin
                 session['username'] = username
                 session['mobile'] = mobile
-                online = 1
-                cur.execute("UPDATE users SET online=%(online_status)s WHERE id=%(user_id)s", {
-                            'online_status': online, 'user_id': uid})
-                mysql.connection.commit()
-                cur.close()
-                return redirect(url_for('index'))
+                session['email'] = email
+                user.online = 1
+                db.session.commit()
+                if user.is_admin():
+                    flash(SUCCESSFULL_LOGIN_MESSAGE)
+                    return redirect(url_for("dashboard"))
+                else:
+                    flash(SUCCESSFULL_LOGIN_MESSAGE)
+                    return redirect(url_for('book_slot'))
             else:
-                cur.close()
                 flash("Password wrong, Please enter correct Password.")
                 return redirect(url_for('login'))
         else:
-            cur.close()
             flash("User Does not exist, Please register.")
             return redirect(url_for("register"))
     return render_template(HTMLS['login'], form=form, forgot_password=FORGOT_PASSWORD_STATUS)
 
 
-@app.route('/admin_login', methods=['GET', 'POST'])
-def admin_login():
-    form = LoginForm()
-    if request.method == 'POST':
-        username = form.username.data
-        admin_password = form.password.data
-        cur = mysql.connection.cursor()
-        result = cur.execute(
-            "SELECT * FROM admins WHERE username = %(user_name)s ", {'user_name': username})
-        if result > 0:
-            data = cur.fetchone()
-            password = data['admin_password']
-            uid = data['id']
-            name = data['name']
-            admin = data['admin']
-            username = data['username']
-            if sha256_crypt.verify(admin_password, password):
-                session['logged'] = True
-                session['uid'] = uid
-                session['name'] = name
-                session['admin'] = admin
-                session['username'] = username
-                online = 1
-                cur.execute("UPDATE admins SET online=%(online_status)s where id=%(admin_id)s", {
-                            'admin_id': uid, 'online_status': online})
-                mysql.connection.commit()
-                cur.close()
-                flash("Successfully Logged")
-                return redirect(url_for("dashboard"))
-            else:
-                cur.close()
-                flash("password error")
-                return redirect(url_for('admin_login'))
-        else:
-            flash("enter correct login details")
-    return render_template(HTMLS['admin login'], form=form)
-
-
 @app.route('/logout')
 def logout():
     if 'uid' in session:
-        cur = mysql.connection.cursor()
-        online = 0
         uid = session['uid']
-        if session['admin'] == 1:
-            cur.execute("UPDATE admins SET online=%(online_status)s where id=%(user_id)s", {
-                        'user_id': uid, 'online_status': online})
-        else:
-            cur.execute("UPDATE users SET online=%(online_status)s where id=%(user_id)s", {
-                        'user_id': uid, 'online_status': online})
-        mysql.connection.commit()
-        cur.close()
+        user = Users.query.filter_by(user_id=uid).first()
+        user.online = 0
+        db.session.commit()
         session.clear()
     return redirect(url_for('index'))
 
@@ -192,35 +141,29 @@ def reset_password():
     if request.method == 'POST':
         username = form.username.data
         mobile = form.mobile.data
-        cur = mysql.connection.cursor()
         if 'reset' in request.args:
             if reset_form.confirm_new_password.data == reset_form.new_password.data:
-                new_password = sha256_crypt.encrypt(
-                    str(reset_form.new_password.data))
-                cur.execute("UPDATE users SET user_password=%(new_pass)s WHERE username=%(user_name)s", {
-                            'user_name': username, 'new_pass': new_password})
-                mysql.connection.commit()
-                cur.close()
+                new_password = sha256_crypt.encrypt(str(reset_form.new_password.data))
+                user = Users.query.filter_by(username=session['username']).first()
+                user.password = new_password
+                db.session.commit()
                 flash("password updated successfully")
+                session.clear()
                 return redirect(url_for('login'))
             else:
                 flash("password mismatch")
-                cur.close()
                 return render_template(HTMLS['reset'], form=reset_form)
-        result = cur.execute(
-            "SELECT * FROM users WHERE username=%(user_name)s", {'user_name': username})
-        if result > 0:
-            user = cur.fetchone()
-            if user['mobile'] == mobile:
-                cur.close()
+        user = Users.query.filter_by(username=username).first()
+        if user:
+            if user.mobile == mobile:
                 FORGOT_PASSWORD_STATUS = False
+                session['username'] = username
+                session['mobile'] = mobile
                 return render_template(HTMLS['reset'], form=reset_form)
             else:
-                cur.close()
                 flash("please enter correct mobile")
                 return render_template(HTMLS['login'], form=form, forgot_password=FORGOT_PASSWORD_STATUS)
         else:
-            cur.close()
             flash("Please enter Valid details")
             return render_template(HTMLS['login'], form=form, forgot_password=FORGOT_PASSWORD_STATUS)
     return render_template(HTMLS['login'], form=form, forgot_password=FORGOT_PASSWORD_STATUS)
@@ -235,28 +178,40 @@ def register():
         password = sha256_crypt.encrypt(str(form.password.data))
         email = form.email.data
         mobile = form.mobile.data
-
-        cur = mysql.connection.cursor()
-        result = cur.execute("SELECT username FROM users WHERE username=%(user_name)s", {
-                             'user_name': username})
-        if result == 0:
-            cur.execute("INSERT INTO users(name, username, user_password, email, mobile) VALUES(%s, %s, %s, %s, %s)",
-                        (name, username, password, email, mobile))
-            mysql.connection.commit()
-            cur.close()
+        result = Users.query.filter_by(username=username).first()
+        if result is None or result == 0:
+            user = Users(
+                name=name,
+                username=username,
+                password=password,
+                email=email,
+                mobile=mobile
+            )
+            db.session.add(user)
+            db.session.commit()
             return redirect(url_for('index'))
         else:
-            cur.close()
-            flash(
-                f"{username} already exist please login or try creating account with unique Username")
+            flash(f"{username} already exist please login or try creating account with unique Username")
             return redirect(url_for('login'))
     return render_template(HTMLS['register'], form=form)
 
 
-def helper(sport):
-    flash(f"Select a slot for {sport}")
+def helper(sport, court):
+    flash(f"Select a slot for {sport} at {court}")
     return redirect(url_for('book_slot'))
 
+def time_comment_data(court_1, court_2, cricket):
+    timeslot = list()
+    comment = list()
+    timeslot.append(court_1.court1_slots.data) if court_1.court1_slots.data != None else timeslot.append(str(0))
+    comment.append(court_1.court1_comment.data) if court_1.court1_comment.data != None else comment.append('')
+    timeslot.append(court_2.court2_slots.data) if court_2.court2_slots.data != None else timeslot.append(str(0))
+    comment.append(court_2.court2_comment.data) if court_2.court2_comment.data != None else comment.append('')
+    timeslot.append(cricket.cricket_slots.data) if cricket.cricket_slots.data != None else timeslot.append(str(0))
+    comment.append(cricket.cricket_comment.data) if cricket.cricket_comment.data != None else comment.append('')
+    timeslot.sort()
+    comment.sort()
+    return timeslot[-1], comment[-1]
 
 @app.route('/bookslot', methods=['GET', 'POST'])
 def book_slot():
@@ -266,48 +221,30 @@ def book_slot():
     radio_day = SlotBookingForm(label="Day", sport="")
     booked_slots = disable_slots()
     if request.method == 'POST':
-        court1_slot_value = court_1.court1_slots.data
-        court1_comment_value = court_1.court1_comment.data
-        court2_slot_value = court_2.court2_slots.data
-        court2_comment_value = court_2.court2_comment.data
-        cricket_slot_value = cricket.cricket_slots.data
-        cricket_comment_value = cricket.cricket_comment.data
-        day_value = radio_day.days.data
-        print(day_value)
+        timeslot, comment = time_comment_data(court_1=court_1, court_2=court_2, cricket=cricket)
+        # day_value = radio_day.days.data
+        # print(day_value)
         # TODO: implement next day slots
         date = datetime.now().date()
-        cur = mysql.connection.cursor()
         if 'logged' in session:
             sport = request.args['sport']
-            query_string = "INSERT INTO bookings(username, user_id, sport, courtname, year, month, day, timeslot, comment) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            update_query = "UPDATE slotsavailable SET availability=0 WHERE courtname=%(court_name)s and timeslot=%(time_slot)s and date=%(date)s"
-            if sport == CRICKET and cricket_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], CRICKET, sport,
-                            date.year, MONTHS[date.month], date.day, cricket_slot_value, cricket_comment_value))
-                cur.execute(update_query, {
-                            'court_name': sport, 'time_slot': cricket_slot_value, 'date': date})
-            elif sport == CRICKET and cricket_slot_value == None:
-                helper(sport)
-            elif sport == COURT_1 and court1_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], BADMINTON, sport,
-                            date.year, MONTHS[date.month], date.day, court1_slot_value, court1_comment_value))
-                cur.execute(update_query, {
-                            'court_name': sport, 'time_slot': court1_slot_value, 'date': date})
-            elif sport == COURT_1 and court1_slot_value == None:
-                helper(sport)
-            elif sport == COURT_2 and court2_slot_value != None:
-                cur.execute(query_string, (session['username'], session['uid'], BADMINTON, sport,
-                            date.year, MONTHS[date.month], date.day, court2_slot_value, court2_comment_value))
-                cur.execute(update_query, {
-                            'court_name': sport, 'time_slot': court2_slot_value, 'date': date})
-            elif sport == COURT_2 and court2_slot_value == None:
-                helper(sport)
-            mysql.connection.commit()
-            cur.close()
-            flash(f"Slot booked successfully for {sport}")
+            court = request.args['court']
+            if timeslot == "0":
+                return helper(sport=sport, court=court)
+            booking = Bookings(
+                    user_id=session['uid'],
+                    sport=sport,
+                    courtname=court,
+                    timeslot=timeslot,
+                    comment=comment if comment != '' else None
+                    )
+            slot = Slots.query.filter_by(courtname=court, timeslot=timeslot, date=date).first()
+            slot.availability = 0
+            db.session.add(booking)
+            db.session.commit()
+            flash(f"Slot booked successfully for {sport} at {court}")
             return redirect(url_for('book_slot'))
         else:
-            cur.close()
             flash("please Login to Book a Slot")
             return redirect(url_for('login'))
     return render_template(HTMLS['slots'], court_1=court_1, court_2=court_2, cricket=cricket, day_choice=radio_day, booked_slots=booked_slots)
@@ -316,13 +253,8 @@ def book_slot():
 @app.route('/timeline')
 def timeline():
     if "logged" in session:
-        cur = mysql.connection.cursor()
-        result = cur.execute(
-            "SELECT * FROM bookings WHERE username=%(user_name)s", {'user_name': session['username']})
-        if result > 0:
-            bookings = cur.fetchall()
-            cur.close()
-            return render_template(HTMLS['timeline'], bookings=bookings, length=len(bookings))
+        bookings = Bookings.query.filter_by(user_id=session['uid']).all()
+        return render_template(HTMLS['timeline'], bookings=bookings, length=len(bookings))
     return render_template(HTMLS['timeline'], bookings=[], length=0)
 
 
@@ -335,50 +267,43 @@ def disable_slots():
         COURT_1: [],
         COURT_2: []
     }
-    cur = mysql.connection.cursor()
-    available_slots = cur.execute(
-        "SELECT * FROM slotsavailable WHERE availability=1 and date=%(date)s", {'date': date})
+    available_slots = Slots.query.filter_by(availability=1, date=date).count()
     if available_slots == 0:
-        booked_slots[COURT_1].extend(SLOTS)
-        booked_slots[COURT_2].extend(SLOTS)
+        booked_slots[COURT_1].extend(B_SLOTS)
+        booked_slots[COURT_2].extend(B_SLOTS)
         booked_slots[CRICKET].extend(C_SLOTS)
-        cur.close()
         return booked_slots
     if hour >= 20:
-        booked_slots[COURT_1].extend(SLOTS)
-        booked_slots[COURT_2].extend(SLOTS)
+        booked_slots[COURT_1].extend(B_SLOTS)
+        booked_slots[COURT_2].extend(B_SLOTS)
         booked_slots[CRICKET].extend(C_SLOTS)
     elif hour >= 17:
-        booked_slots[COURT_1].extend(SLOTS[:3])
-        booked_slots[COURT_2].extend(SLOTS[:3])
+        booked_slots[COURT_1].extend(B_SLOTS[:3])
+        booked_slots[COURT_2].extend(B_SLOTS[:3])
         booked_slots[CRICKET].extend(C_SLOTS[:2])
     elif hour >= 14:
-        booked_slots[COURT_1].extend(SLOTS[:2])
-        booked_slots[COURT_2].extend(SLOTS[:2])
+        booked_slots[COURT_1].extend(B_SLOTS[:2])
+        booked_slots[COURT_2].extend(B_SLOTS[:2])
         booked_slots[CRICKET].extend(C_SLOTS[:2])
     elif hour >= 10:
-        booked_slots[COURT_1].extend(SLOTS[:2])
-        booked_slots[COURT_2].extend(SLOTS[:2])
+        booked_slots[COURT_1].extend(B_SLOTS[:2])
+        booked_slots[COURT_2].extend(B_SLOTS[:2])
         booked_slots[CRICKET].append(C_SLOTS[0])
     elif hour >= 8:
-        booked_slots[COURT_1].extend(SLOTS[:2])
-        booked_slots[COURT_2].extend(SLOTS[:2])
+        booked_slots[COURT_1].extend(B_SLOTS[:2])
+        booked_slots[COURT_2].extend(B_SLOTS[:2])
     elif hour >= 6:
-        booked_slots[COURT_1].append(SLOTS[0])
-        booked_slots[COURT_2].append(SLOTS[0])
-    result = cur.execute(
-        "SELECT courtname, timeslot FROM slotsavailable WHERE availability=0 and date=%(date)s", {'date': date})
-    if result > 0:
-        current_day_slots = cur.fetchall()
+        booked_slots[COURT_1].append(B_SLOTS[0])
+        booked_slots[COURT_2].append(B_SLOTS[0])
+    current_day_slots = Slots.query.filter_by(availability=0, date=date).all()
+    if len(current_day_slots) > 0:
         for slot in current_day_slots:
-            if slot['timeslot'] not in booked_slots[slot['courtname']]:
-                booked_slots[slot['courtname']].append(slot['timeslot'])
-        cur.close()
+            if slot.timeslot not in booked_slots[slot.courtname]:
+                booked_slots[slot.courtname].append(slot.timeslot)
         return booked_slots
     else:
-        cur.close()
         return booked_slots
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

@@ -1,8 +1,10 @@
-# booking-system-flask
+# Booking-system-flask-v2
 
 flask applicatio to book a slot from available slots from provided sports
 
-## MySQL DB, Flask, WTF, flask-mysqldb
+## MySQL(DB), Flask, WTF, flask-SQLAlchemy
+
+adapted for ORM using SQLAlchemy
 
 ### functionalities
 
@@ -20,4 +22,7 @@ flask applicatio to book a slot from available slots from provided sports
   - admin can Block slots before updating them to the server
   - can see number of online users
 
-## working on admin dashboard
+## working on admin dashboard and book slots page
+
+- total profit in admin dashboard
+- slots booking feature for next day

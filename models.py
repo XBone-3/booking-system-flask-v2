@@ -52,24 +52,25 @@ class Slots(db.Model):
     __tablename__ = 'slots'
 
 
-    id = db.Column(db.Integer, primary_key=True)
+    slot_id = db.Column(db.Integer, primary_key=True)
     sport = db.Column(db.String(45), nullable=False)
     courtname = db.Column(db.String(45), nullable=False)
     timeslot = db.Column(db.String(45), nullable=False)
     availability = db.Column(db.Boolean, default=True)
     date = db.Column(db.DateTime, default=datetime.now().date())
 
-    def __init__(self, sport, courtname, timeslot, availability=1):
+    def __init__(self, sport, courtname, timeslot, availability=1, date=datetime.now().date()):
         self.sport = sport
         self.courtname = courtname
         self.timeslot = timeslot
         self.availability = availability
+        self.date = date
 
 class Bookings(db.Model):
     __tablename__ = "bookings"
 
 
-    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     sport = db.Column(db.String(45), nullable=False)
     courtname = db.Column(db.String(45), nullable=False)
@@ -79,13 +80,13 @@ class Bookings(db.Model):
     timeslot = db.Column(db.String(45), nullable=False)
     comment = db.Column(db.String(255), default="You did not comment on this booking.. But, we think you enjoyed a lot.")
 
-    def __init__(self, user_id, sport, courtname, timeslot, comment):
+    def __init__(self, user_id, sport, courtname, year, month, day, timeslot, comment):
         self.user_id = user_id
         self.sport = sport
         self.courtname = courtname
-        self.year = datetime.now().date().year
-        self.month = MONTHS[datetime.now().date().month]
-        self.day = datetime.now().date().day
+        self.year = year
+        self.month = month
+        self.day = day
         self.timeslot = timeslot
         self.comment = comment
 

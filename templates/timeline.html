@@ -25,6 +25,11 @@
         <h1 class="text-center text-white">MAKE YOUR FIRST BOOKING</h1>
         <a href="{{url_for('book_slot')}}" class="btn btn-success">BOOK</a>
         {% endif %}
+        <div>
+            <div class="pt-3">
+                <h3 class="text-left text-white">Bookings {{ length  }}</h3>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

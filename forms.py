@@ -67,6 +67,12 @@ class AdminSlotBookingForm(FlaskForm):
     
     cricket_slots = MultiSelect(label=CRICKET, choices=CRICKET_CHOICES)
 
+    court1_slots_1 = MultiSelect(label=COURT_1, choices=BADMINTON_CHOICES)
+
+    court2_slots_1 = MultiSelect(label=COURT_2, choices=BADMINTON_CHOICES)
+    
+    cricket_slots_1 = MultiSelect(label=CRICKET, choices=CRICKET_CHOICES)
+
     def __init__(self, **kwargs) -> None:
         super().__init__()
         self.label = kwargs['label']

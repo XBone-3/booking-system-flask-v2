@@ -3,10 +3,15 @@
 {% block body %}
 <div class="container d-flex flex-row justify-content-center">
     <div class="p-2">
-        <form action="" method="post">
-            {% for day in day_choice.days %} 
-            {{ day( class="btn-check") }} 
-            {{ day.label( class="btn btn-outline-success mb-1")}}
+        <form action="" id="radioform" method="post">
+            {% for day in day_choice.days %}
+                {% if session['day'] == day.data %}
+                    {{ day(class="btn-check") }} 
+                    {{ day.label(class="btn btn-success mb-1 disabled")}}
+                {% else %}
+                    {{ day(class="btn-check") }} 
+                    {{ day.label(class="btn btn-outline-success mb-1")}}
+                {% endif %}
             {% endfor %}
         </form>
     </div>
@@ -19,25 +24,43 @@
                     alt="court 1" />
                 <div class="card-body dark text-center">
                     <h5 class="card-title text-center">{{court_1.label}} @ {{ court_1.sport }}</h5>
-                    <div class="container">
+                    <div class="container" id="court-1">
                         <form action="?sport=Badminton&court={{court_1.label}}&value={{court_1.court1_slots.data}}" method="post">
-                            {% for slot in court_1.court1_slots %} 
-                                {% if slot.data in booked_slots[court_1.label] %}
-                                    {{ slot( class="btn-check" ) }} 
-                                    {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                            {% for slot in court_1.court1_slots %}
+                                {% if session['day'] == "tomorrow" %}
+                                    {% if slot.data in blocked_slots_1[court_1.label] %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-danger mb-1 disabled") }}
+                                    {% else %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% endif %}
                                 {% else %}
-                                    {{ slot( class="btn-check" ) }} 
-                                    {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% if slot.data in blocked_slots[court_1.label] %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                    {% else %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% endif %}
                                 {% endif %}
                             {% endfor %}
                             <div class="mt-1">
                                 {{court_1.court1_comment()}}
                             </div>
                             <div class="text-center">
-                                {% if booked_slots[court_1.label]|length >= 4 %}
-                                    <button type="submit" class="btn btn-danger disabled">Book</button>
+                                {% if session['day'] == "tomorrow" %}
+                                    {% if blocked_slots_1[court_1.label]|length >= 4 %}
+                                        <button type="submit" class="btn btn-danger disabled">Book</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-success">Book</button>
+                                    {% endif %}
                                 {% else %}
-                                    <button type="submit" class="btn btn-success">Book</button>
+                                    {% if blocked_slots[court_1.label]|length >= 4 %}
+                                        <button type="submit" class="btn btn-danger disabled">Book</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-success">Book</button>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </form>
@@ -53,23 +76,41 @@
                     <h5 class="card-title text-center">{{cricket.label}}</h5>
                     <div class="container-sm">
                         <form action="?sport=Cricket&court={{cricket.label}}&value={{cricket.cricket_slots.data}}" method="post">
-                            {% for slot in cricket.cricket_slots %} 
-                                {% if slot.data in booked_slots[cricket.label] %}
-                                    {{ slot( class="btn-check" ) }} 
-                                    {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                            {% for slot in cricket.cricket_slots %}
+                                {% if session['day'] == 'tomorrow' %}
+                                    {% if slot.data in blocked_slots_1[cricket.label] %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                    {% else %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% endif %}
                                 {% else %}
-                                    {{ slot( class="btn-check" ) }} 
-                                    {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% if slot.data in blocked_slots[cricket.label] %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                    {% else %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% endif %}
                                 {% endif %}
                             {% endfor %}
                             <div class="mt-1">
                                 {{cricket.cricket_comment()}}
                             </div>
                             <div class="text-center">
-                                {% if booked_slots[cricket.label]|length == 3 %}
-                                    <button type="submit" class="btn btn-danger disabled">Book</button>
+                                {% if session['day'] == "tomorrow" %}
+                                    {% if blocked_slots_1[cricket.label]|length == 3 %}
+                                        <button type="submit" class="btn btn-danger disabled">Book</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-success">Book</button>
+                                    {% endif %}
                                 {% else %}
-                                    <button type="submit" class="btn btn-success">Book</button>
+                                    {% if blocked_slots[cricket.label]|length == 3 %}
+                                        <button type="submit" class="btn btn-danger disabled">Book</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-success">Book</button>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </form>
@@ -85,23 +126,41 @@
                     <h5 class="card-title text-center">{{court_2.label}} @ {{ court_2.sport }}</h5>
                     <div class="container">
                         <form action="?sport=Badminton&court={{court_2.label}}&value={{court_2.court2_slots.data}}" method="post">
-                            {% for slot in court_2.court2_slots %} 
-                                {% if slot.data in booked_slots[court_2.label] %}
-                                    {{ slot( class="btn-check" ) }} 
-                                    {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                            {% for slot in court_2.court2_slots %}
+                                {% if session['day'] == 'tomorrow' %} 
+                                    {% if slot.data in blocked_slots_1[court_2.label] %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                    {% else %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% endif %}
                                 {% else %}
-                                    {{ slot( class="btn-check" ) }} 
-                                    {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% if slot.data in blocked_slots[court_2.label] %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-danger mb-1 disabled")}}
+                                    {% else %}
+                                        {{ slot( class="btn-check" ) }} 
+                                        {{ slot.label( class="btn btn-outline-success mb-1")}}
+                                    {% endif %}
                                 {% endif %}
                             {% endfor %}
                             <div class="mt-1">
                                 {{court_2.court2_comment()}}
                             </div>
                             <div class="text-center">
-                                {% if booked_slots[court_2.label]|length >= 4 %}
-                                    <button type="submit" class="btn btn-danger disabled">Book</button>
+                                {% if session['day'] == 'tomorrow' %}
+                                    {% if blocked_slots_1[court_2.label]|length >= 4 %}
+                                        <button type="submit" class="btn btn-danger disabled">Book</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-success">Book</button>
+                                    {% endif %}
                                 {% else %}
-                                    <button type="submit" class="btn btn-success">Book</button>
+                                    {% if blocked_slots[court_2.label]|length >= 4 %}
+                                        <button type="submit" class="btn btn-danger disabled">Book</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-success">Book</button>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </form>
@@ -111,4 +170,19 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block script %}
+<script>
+    const days = document.getElementsByName("days");
+    const radioForm = document.getElementById("radioform")
+
+    let handler = function() {
+        let value = this.value;
+        window.location = "/bookslot/" + value;
+    };
+
+    for (const element of days) {
+        element.onchange = handler
+    }
+</script>
 {% endblock %}

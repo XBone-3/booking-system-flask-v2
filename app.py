@@ -1,4 +1,4 @@
-from flask import Flask, flash, render_template, request, session, redirect, url_for
+from flask import Flask, flash, jsonify, render_template, request, session, redirect, url_for
 from forms import LoginForm, RegisterForm, SlotBookingForm, PasswordResetForm, AdminSlotBookingForm
 from passlib.hash import sha256_crypt
 from datetime import datetime, timedelta
@@ -64,7 +64,7 @@ def dashboard():
     court_1 = AdminSlotBookingForm(label=COURT_1, sport=BADMINTON)
     court_2 = AdminSlotBookingForm(label=COURT_2, sport=BADMINTON)
     cricket = AdminSlotBookingForm(label=CRICKET, sport=CRICKET)
-    blocked_slots, blocked_slots_1 = disable_slots()
+    blocked_slots, blocked_slots_1 = disable_slots()    # this function gives unavailable slots 
     online_users = Users.query.filter_by(online=1).count()
     if request.method == 'POST':
         court1_blocked_slots = court_1.court1_slots.data if court_1.court1_slots.data != None else []
@@ -74,7 +74,7 @@ def dashboard():
         court2_blocked_slots_1 = court_2.court2_slots_1.data if court_2.court2_slots_1.data != None else []
         cricket_blocked_slots_1 = cricket.cricket_slots_1.data if cricket.cricket_slots_1.data != None else []
         if 'logged' in session:
-            slot = int(request.args['slot'])
+            slot = int(request.args['slot'])            # 0 is for today, 1 is for next day
             date = datetime.now().date()
             if slot == 0:
                 return update_slots(court1_blocked_slots, court2_blocked_slots, cricket_blocked_slots, date=date)
@@ -99,9 +99,12 @@ def faq():
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     session['day'] = 'today'
-    if 'search' in request.args:
-        search_term = request.args['search']
-        return redirect(url_for('index'))
+    if request.method == 'GET':
+        print('requested')
+        if 'search' in request.args:
+            search_term = request.args['search']
+            print(search_term, "tested")
+            return redirect(url_for('index'))
     return redirect(url_for('index'))
 
 
@@ -221,12 +224,37 @@ def register():
             return redirect(url_for('login'))
     return render_template(HTMLS['register'], form=form)
 
+@app.route('/get_usernames', methods=['GET'])
+def get_username():
+    user_names = Users.query.with_entities(Users.username).all()
+    return [tuple(row) for row in user_names]
 
-def helper(sport, court):
-    flash(f"Select a slot for {sport} at {court}")
+
+def helper(sport, court, booked):
+    '''
+    sport : String,
+    court : String,
+    booked: Boolean
+
+    show a flash message depending on the booked status.
+    returns a flask responce.
+    '''
+    if booked:
+        flash(f"Slot booked successfully for {sport} at {court}")
+    else:
+        flash(f"Select a slot for {sport} at {court}")
     return redirect(url_for('book_slot'))
 
 def time_comment_data(court_1, court_2, cricket):
+    '''
+    court_1 :   class 'forms.SlotBookingForm',
+    court_2 :   class 'forms.SlotBookingForm',
+    cricket :   class 'forms.SlotBookingForm'
+
+    returns tuple of String objects.
+
+    given the form objects this outputs the timeslot and comment data provided by the user.
+    '''
     timeslot = list()
     comment = list()
     timeslot.append(court_1.court1_slots.data) if court_1.court1_slots.data != None else timeslot.append(str(0))
@@ -240,7 +268,7 @@ def time_comment_data(court_1, court_2, cricket):
     return timeslot[-1], comment[-1]
 
 @app.route('/bookslot', methods=['GET', 'POST'])
-def book_slot(day='today'):
+def book_slot():
     court_1 = SlotBookingForm(label=COURT_1, sport=BADMINTON)
     court_2 = SlotBookingForm(label=COURT_2, sport=BADMINTON)
     cricket = SlotBookingForm(label=CRICKET, sport=CRICKET)
@@ -248,16 +276,13 @@ def book_slot(day='today'):
     blocked_slots, blocked_slots_1 = disable_slots()
     if request.method == 'POST':
         timeslot, comment = time_comment_data(court_1=court_1, court_2=court_2, cricket=cricket)
-        # day_value = radio_day.days.data
-        # print(day_value)
-        # TODO: implement next day slots
         date = datetime.now().date()
         next_day_date = date+timedelta(days=1)
         if 'logged' in session:
             sport = request.args['sport']
             court = request.args['court']
             if timeslot == "0":
-                return helper(sport=sport, court=court)
+                return helper(sport=sport, court=court, booked=False)
             it_is_today = session['day'] == 'today'
             booking = Bookings(
                     user_id=session['uid'],
@@ -276,8 +301,7 @@ def book_slot(day='today'):
             slot.availability = 0
             db.session.add(booking)
             db.session.commit()
-            flash(f"Slot booked successfully for {sport} at {court}")
-            return redirect(url_for('book_slot'))
+            return helper(sport=sport, court=court, booked=True)
         else:
             flash("please Login to Book a Slot")
             return redirect(url_for('login'))
@@ -297,13 +321,26 @@ def timeline():
         return render_template(HTMLS['timeline'], bookings=bookings, length=len(bookings))
     return render_template(HTMLS['timeline'], bookings=[], length=0)
 
-def time_block_slots(available_slots, hour, blocked_slots):
+def time_block_slots(available_slots, hour, blocked_slots, tomorrow=False):
+    '''
+    available_slots :   Int,
+    hour    : Int,
+    blocked_slots   :   dictionary of lists,
+                        {
+                            court_1 :   []
+                            ...
+                        }
+    tomorrow    :   Boolean
+
+    returns None
+
+    updates the blocked_slots object inplace.
+    '''
     if available_slots == 0:
         blocked_slots[COURT_1].extend(B_SLOTS)
         blocked_slots[COURT_2].extend(B_SLOTS)
         blocked_slots[CRICKET].extend(C_SLOTS)
-        return blocked_slots
-    if session['day'] == 'today':
+    if tomorrow == False:
         if hour >= 20:
             blocked_slots[COURT_1].extend(B_SLOTS)
             blocked_slots[COURT_2].extend(B_SLOTS)
@@ -329,6 +366,9 @@ def time_block_slots(available_slots, hour, blocked_slots):
 
 
 def disable_slots():
+    '''
+    returns tuple[dict[str, list], dict[str, list]]
+    '''
     date = datetime.now().date()
     time = str(datetime.now().time()).split(':')
     hour = int(time[0])
@@ -345,7 +385,7 @@ def disable_slots():
     available_slots_today = Slots.query.filter_by(availability=1, date=date).count()
     available_slots_tomorrow = Slots.query.filter_by(availability=1, date=date+timedelta(days=1)).count()
     time_block_slots(available_slots=available_slots_today, hour=hour, blocked_slots=blocked_slots)
-    time_block_slots(available_slots=available_slots_tomorrow, hour=hour, blocked_slots=blocked_slots_tomorrow)
+    time_block_slots(available_slots=available_slots_tomorrow, hour=hour, blocked_slots=blocked_slots_tomorrow, tomorrow=True)
     current_day_slots = Slots.query.filter_by(availability=0, date=date).all()
     next_day_slots = Slots.query.filter_by(availability=0, date=date+timedelta(days=1)).all()
     if len(current_day_slots) > 0:

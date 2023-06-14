@@ -12,6 +12,7 @@
         <div class="mb-3">
             <label for="nickname" class="form-label">{{form.username.label}}</label>
             {{ form.username(class='form-control', id='nickname', size=32) }}
+            <div id="userNameHelp" class="form-text text-light"></div>
         </div>
         <div class="mb-3">
           <label for="InputPassword" class="form-label">{{form.password.label}}</label>
@@ -35,4 +36,38 @@
       </form>
 </div>
 
+{% endblock %}
+{% block script %}
+<script>
+    const userName = document.getElementById("nickname");
+    const availabilityMessage = document.getElementById("userNameHelp");
+    let user_names;
+
+    function handler() {
+        if ((userName.value).length >= 5) {
+            for (const element of user_names){
+                if (userName.value == element[0]){
+                    availabilityMessage.innerText = "\"" + userName.value + "\" is not available.";
+                }else{
+                    availabilityMessage.innerText = "\"" + userName.value + "\" is available.";
+                }
+            }
+        } else if ( (userName.value).length > 0 && (userName.value).length < 5 ) {
+            availabilityMessage.innerText = "Too small for a User Name";
+        } else {
+            availabilityMessage.innerText = "";
+        }
+    }
+    
+    fetch('/get_usernames', {
+        method: 'GET',
+        headers:{
+            'Accept': 'Application/json'
+        }
+    })
+    .then((responce) => responce.json())
+    .then((data) => user_names = data);
+
+    userName.addEventListener('input', handler)
+</script>
 {% endblock %}

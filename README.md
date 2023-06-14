@@ -11,6 +11,7 @@ adapted for ORM using flask-SQLAlchemy
 - admin login
 - user login
 - user registration
+  - user can check availability of username
 - updating slots
   - availability of slot accordig to time of the day
   - availability after it is booked by a user
@@ -27,3 +28,5 @@ adapted for ORM using flask-SQLAlchemy
   - can add slots for nextday in advance
   - admin can Block slots before updating them to the server
   - can see number of online users
+
+### search is not implimented
